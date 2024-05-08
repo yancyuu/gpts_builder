@@ -1,0 +1,9 @@
+> python setup.py sdist bdist_wheel
+
+> pypi-AgENdGVzdC5weXBpLm9yZwIkMjI0ODI3NmMtM2NkYi00MThhLTgxYmUtNjIzNzZlNTUxNjVjAAIqWzMsIjU5MzRmNjhiLTFkOTItNDQ5MS05NWYwLWJhN2JiZjc4ZTQ0OCJdAAAGIAsIvG9Z9HgbrBR5Y-uaoxHtQfovEAZqany1963lY0RD
+> twine upload --repository testpypi dist/*
+> pip install -i https://test.pypi.org/simple/ gpts-builder
+
+> pypi-AgEIcHlwaS5vcmcCJDdlZmQ4ZTk3LTY2YzEtNDc4YS05MTVkLTZiMDEwNjZlNjYwMAACKlszLCIwNmU3ZmZmNy01YjkwLTQ2ZDYtOTk4Ni0yY2U5ZjIwYTA4OGYiXQAABiDlHUBnLIHbLPMLqiZZFeDiQdPKfCdDCbXsftBL94ImVg
+> twine upload dist/*
+> pip install -i https://pypi.org/simple/ gpts-builder

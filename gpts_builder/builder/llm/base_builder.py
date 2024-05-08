@@ -1,18 +1,15 @@
-from builder.prompt.builder import PromptBuilder
-from builder.plugin.base_builder import BasePluginBuilder
-from config.config_manager import config_manager
-from session_manager.chatgpt_session import ChatGPTSession
+from ..prompt.builder import PromptBuilder
 
-from util.id_generator import generate_common_id
+from ...util.id_generator import generate_common_id
 
 
 class BaseBuilder(PromptBuilder):
 
     @property
-    def plugins(self):
-        return self.__plugins
+    def current_plugin(self):
+        return self.__current_plugin
 
-    def __init__(self, session_manager, session_id):
+    def __init__(self, session_id, session_manager):
         """_summary_
 
         Args:
@@ -23,24 +20,17 @@ class BaseBuilder(PromptBuilder):
         if not session_id:
             session_id = generate_common_id()
         super().__init__(session_id, session_manager)
-        self.__plugins = []
+        self.__current_plugin = None
     
-    def install_plugin(self, plugin):
+    def set_plugin(self, plugin, **args):
         """动态添加属性到LLM实例。
 
         Args:
             attr_name (str): 属性名，例如 'kb'
             attr_value (object): 属性值，可以是任何对象，例如 KnowledgeBase 实例
         """
-        plugin_name = plugin.__class__.__name__.lower()
-        self.__plugins.append(plugin_name)
-        setattr(self, plugin_name, plugin)
+        self.__current_plugin = plugin(**args)
 
-    def uninstall_plugin(self, plugin_name):
-        if plugin_name in self.__plugins:
-            # 移除方法绑定
-            delattr(self, plugin_name)
-            del self.__plugins[plugin_name]
 
     
 

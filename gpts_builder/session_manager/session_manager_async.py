@@ -1,10 +1,8 @@
 # chatGPT的session管理器,用来存放进程中的一些全局变量，比如上下文回话
-from util.logging.logger import logger
-from util.system.sys_env import get_env
-from session_manager.chatgpt_session import ChatGPTSession
+from ..util.logger import logger
+from .chatgpt_session import ChatGPTSession
 
-from session_manager.storage.global_storage import global_storage
-from session_manager.storage.redis_storage_async import RedisStorageAsync
+from .storage.redis_storage_async import RedisStorageAsync
 from typing import Type, Optional
 
 
@@ -14,7 +12,7 @@ class SessionManagerAsync(object):
     def __init__(self, sessioncls: Type[ChatGPTSession], session_storage: RedisStorageAsync, model):
         self.session_storage = session_storage
         self.sessioncls = sessioncls
-        self.expires_in_seconds = int(get_env("SESSION_EXPIRES_IN_SECONDS", 3600))
+        self.expires_in_seconds = 3600
         self.model = model
 
     async def build_session(self, session_id, system_prompt=None):

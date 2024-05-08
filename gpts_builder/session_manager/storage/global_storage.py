@@ -1,6 +1,6 @@
 """用户进程内部通讯的的公共变量"""
-from util.base_class.singleton import SingletonMetaThreadSafe as SingletonMetaclass
-from util.logging.logger import logger
+from ...util.singleton import SingletonMetaThreadSafe as SingletonMetaclass
+from ...util.logger import logger
 import json
 
 """

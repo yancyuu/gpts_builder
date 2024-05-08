@@ -2,17 +2,17 @@ from setuptools import setup, find_packages
 
 setup(
     name="gpts_builder",
-    version="0.1.0",
+    version="0.1.15",
     author="yancyyu",
     author_email="yancyyu.ok@gmail.com",
     description="A Python library for quickly building applications with large language models.",
-    long_description=open('README.md').read(),
+    long_description=open('README.md', 'r', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
     license="MIT",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
-        'aioredis==2.0.1',
+        'aioredis>=1.3,<3',
         'anyio==4.3.0',
         'async-timeout==4.0.3',
         'backoff==2.2.1',
@@ -37,7 +37,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
-    url="http://github/gpts_builder",  # Optional
+    url="https://github.com/yancyuu/gpts_builder.git",  # Optional
     keywords="GPT, large language models, AI, application builder",
     zip_safe=False
 )

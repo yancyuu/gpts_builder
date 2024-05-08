@@ -1,7 +1,7 @@
-from builder.prompt.base_builder import BaseBuilder
-from builder.prompt.template import KB_REFERENCE_TEMPLATE
-from util.logging.logger import logger
-from session_manager.session_manager import SessionManager
+from ...prompt_base_builder import BaseBuilder
+from ...prompt_template import KB_REFERENCE_TEMPLATE
+from ...util.logger import logger
+from ...session_manager import SessionManager
 
 class PromptBuilder(BaseBuilder):
 
