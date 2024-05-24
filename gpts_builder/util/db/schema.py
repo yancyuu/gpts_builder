@@ -31,6 +31,10 @@ class EmbbedingSchame:
     @property
     def kb_id(self):
         return "kb_id"
+    
+    @property
+    def created_at(self):
+        return 'create_time'
 
 class KbSchame:
     

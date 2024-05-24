@@ -1,3 +1,3 @@
 from .llm.llm_builder import LLM
 
-from .plugin.kb_builder import KbPluginBuilder
+from .rag.kb_builder import KbPluginBuilder

@@ -1,3 +1,3 @@
 from .llm.llm_async_builder import LLMAsync
 
-from .plugin.kb_builder_async import KbPluginBuilderAsync
+from .rag.kb_builder_async import KbPluginBuilderAsync

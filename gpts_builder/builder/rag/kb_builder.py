@@ -36,7 +36,9 @@ class KbPluginBuilder:
             cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS {KB_TABLE_NAME} (
                 {self.kb_schema.id} SERIAL PRIMARY KEY,
-                {self.kb_schema.name} TEXT
+                {self.kb_schema.name} TEXT,
+                {self.kb_schema.creator} TEXT,
+                {self.kb_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )""")
 
             # 创建索引表 index_table，关联到 kb 表的 id
@@ -46,6 +48,7 @@ class KbPluginBuilder:
                 {self.answer_schema.text} TEXT,
                 {self.answer_schema.vector} vector,
                 {self.answer_schema.kb_id} INTEGER,
+                {self.answer_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY ({self.answer_schema.kb_id}) REFERENCES {KB_TABLE_NAME} ({self.kb_schema.id})
             )""")
 
@@ -56,13 +59,14 @@ class KbPluginBuilder:
                 {self.answer_schema.id} INTEGER,
                 {self.question_schema.text} TEXT,
                 {self.question_schema.vector} vector,
+                {self.question_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY ({self.answer_schema.id}) REFERENCES {ANSWER_TABLE_NAME} ({self.answer_schema.id})
             )""")
 
             # 提交所有更改
             self.db.commit()
 
-    def add_kb_entry(self, name, creator="gpt_builder"):
+    def create_dataset(self, name, creator="gpt_builder"):
         """
         向知识库添加一个新的条目，包括创建者和创建时间。
 
@@ -87,7 +91,7 @@ class KbPluginBuilder:
             return new_id
 
         
-    def get_kb_by_name(self, name):
+    def get_dataset(self, name):
         """
         根据名称获取知识库条目的 ID。
 
@@ -110,7 +114,7 @@ class KbPluginBuilder:
             else:
                 return None  # 如果没有找到，返回 None
 
-    def add_index_with_questions(self, id, index_text, questions_list):
+    def create_datas(self, id, index_text, output_list):
         """向数据库添加一个答案和相关的问题列表。"""
         if not id:
             logger.info("未成功生产知识库实例")
@@ -131,7 +135,7 @@ class KbPluginBuilder:
             
             # 批量插入问题
             question_entries = []
-            for question_text in questions_list:
+            for question_text in output_list:
                 question_vector = self.generate_vector(question_text).get("embedding")
                 if question_vector:
                     question_entries.append((index_id, question_text, question_vector))
@@ -164,7 +168,7 @@ class KbPluginBuilder:
             return {}
         return response.get("data",{}).get("data", [])[0] if response.get("data") else {}
 
-    def query_similarity(self, text, kb_ids=[], approximation_filter={"index": -1, "content": -1}):
+    def query_similarity(self, text, kb_ids=[], similarity=-1, search_all = False):
         """
         计算输入文本与数据库中内容的余弦相似度，并返回包括索引信息和相关内容信息的数据结构。
 
@@ -205,7 +209,7 @@ class KbPluginBuilder:
                     index_similarity = 1 - cosine(input_vector, index_vector_data)
 
                     # 过滤索引的相似度
-                    if index_similarity < approximation_filter.get("index", -1):
+                    if index_similarity < similarity and not search_all:
                         continue
 
                     # 查询与索引ID关联的所有内容
@@ -219,26 +223,78 @@ class KbPluginBuilder:
                     for content_vector, content_text in content_data:
                         content_vector_data = json.loads(content_vector)
                         content_similarity = 1 - cosine(input_vector, content_vector_data)
-
+                        # 有问题的相似度，则计算平均相似度
+                        if search_all:
+                            if content_similarity:
+                                content_similarity = (index_similarity + content_similarity) / 2
+                            else:
+                                content_similarity = index_similarity
                         # 过滤内容的相似度
-                        if content_similarity < approximation_filter.get("content", -1):
+                        if content_similarity < similarity and not search_all:
                             continue
-
-                        content_list.append({'text': content_text, 'similarity': content_similarity})
+                        content_list.append({"index_id": index_id, 'related_questions': index_text, 'answer_text': content_text, 'similarity': content_similarity})
 
                     # 按相似度分数降序排序
                     content_list.sort(key=lambda x: x['similarity'], reverse=True)
 
-                    # 保存索引和对应的内容
-                    index_content = {
-                        "index_id": index_id,
-                        'index_text': index_text,
-                        'index_similarity': index_similarity,
-                        'contents': content_list
-                    }
                 except Exception as e:
                     logger.error(f"处理索引 {index_id} 时出错: {e}")
-            
-            kb_content_map[kb_id] = index_content
+            if index_content:
+                kb_content_map[kb_id] = index_content
 
         return kb_content_map
+    
+    def query_regex(self, regex, kb_ids=[]):
+        """
+        根据正则表达式查询数据库中的内容。
+
+        Args:
+            regex (str): 查询的正则表达式。
+            kb_ids (list): 知识库ID列表。
+
+        Returns:
+            dict: 以知识库ID为键，每个键包含匹配的索引ID和对应的索引文本及相关内容列表的字典。
+        """
+        cursor = self.db.cursor()
+        if not kb_ids:
+            logger.info("未成功获取知识库实例")
+            return None
+
+        # 最外层字典，以kb_id为键
+        kb_content_map = {}
+
+        for kb_id in kb_ids:
+            try:
+                # 查询每个kb_id对应的答案数据
+                sql = f"""
+                    SELECT {self.answer_schema.id}, {self.answer_schema.text}
+                    FROM {ANSWER_TABLE_NAME}
+                    WHERE {self.answer_schema.kb_id} = %s AND {self.answer_schema.text} ~ %s"""
+                cursor.execute(sql, (kb_id, regex))
+                answer_data_list = cursor.fetchall()
+
+                for answer_id, answer_text in answer_data_list:
+                    # 查询与答案ID关联的所有问题
+                    sql = f"""
+                        SELECT {self.question_schema.text}
+                        FROM {QUESTION_TABLE_NAME}
+                        WHERE {self.question_schema.answer_id} = %s"""
+                    cursor.execute(sql, (answer_id,))
+                    question_texts = cursor.fetchall()
+                    questions = [question[0] for question in question_texts]  # Assuming the text is the first column
+
+                    if kb_id not in kb_content_map:
+                        kb_content_map[kb_id] = []
+
+                    # 添加到列表
+                    kb_content_map[kb_id].append({
+                        "answer_id": answer_id,
+                        "answer_text": answer_text,
+                        "related_questions": questions
+                    })
+
+            except Exception as e:
+                logger.error(f"处理知识库 {kb_id} 时出错: {e}")
+
+        return kb_content_map
+    
