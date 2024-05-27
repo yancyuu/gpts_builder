@@ -1,8 +1,7 @@
-from ..llm.base_builder import BaseBuilder
+from .llm_base_builder import BaseBuilder
 from ...config.config_manager import config_manager
 from ...session_manager.session_manager import ChatGPTSession
 from ...session_manager.session_manager import SessionManager
-from ...session_manager.session_manager_async import SessionManagerAsync
 from ...session_manager.storage.global_storage import global_storage
 from ...util.http_client import http_client
 from ...util.logger import logger
@@ -50,27 +49,62 @@ class LLM(BaseBuilder):
 
         return response
     
-    def chat_completions(self):
+    def chat_completions(self, ** args) -> ChatGPTSession:
         """大模型chat请求
         """
+        try:
+            # 校验传入的参数
+            valid_args = self.validate_chat_args(args, self.session_manager.model)
+        except ValueError as e:
+            raise Exception(f"Invalid argument: {e}")
+        # 1. 准备请求头
         headers = {
             'Authorization': f"Bearer {config_manager.apikey}",
             'Content-Type': 'application/json'
         }
+        # 2. 准备请求数据
         payload = {
             "messages": self.session.messages,
             "model": self.session.model
             }
+        if args:
+            payload.update(valid_args)
         logger.info(f"Sending  chat completions request payload: {payload} headers {headers}")
 
         response = http_client.post(config_manager.base_url + "/v1/chat/completions", json=payload, headers=headers, timeout=60, max_retries=3)
         # 记录响应
         logger.info(f"Received chat completions response: {response}")
 
-        content = response.get("choices")[0].get("message",{}).get("content") if response.get("choices") else ""
-
-        return self.session_manager.session_reply(self.session.session_id, content)
+        return response
     
+
+    def chat_completions_stream(self, **args):
+        """大模型chat请求，流式返回一个异步生成器"""
+        try:
+            # 校验传入的参数
+            valid_args = self.validate_chat_args(args, self.session_manager.model)
+        except ValueError as e:
+            raise Exception(f"[gpt-builder] Invalid argument: {e}")
+        
+        # 准备请求头
+        headers = {
+            'Authorization': f"Bearer {config_manager.apikey}",
+            'Content-Type': 'application/json'
+        }
+        
+        # 准备请求数据
+        payload = {
+            "messages": self.session.messages,
+            "model": self.session.model,
+            "stream": True
+        }
+        if args:
+            payload.update(valid_args)
+
+        url = config_manager.base_url + "/v1/chat/completions"        
+        curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
+        logger.info(f"[gpt-builder] {curl_command}")
+        return http_client.post_stream(url=url, json=payload, headers=headers, timeout=60)    
     
 
 

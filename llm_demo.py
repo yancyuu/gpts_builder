@@ -1,73 +1,66 @@
 from gpts_builder.builder import LLM
-from gpts_builder.session_manager import SessionManager
-from gpts_builder.session_manager import SessionManagerAsync
-from gpts_builder.session_manager.storage.redis_storage import RedisStorage
+from gpts_builder.builder_async import LLMAsync
 from gpts_builder.session_manager.storage.redis_storage_async import RedisStorageAsync
-
-from gpts_builder.builder_async import KbPluginBuilderAsync
-from gpts_builder.builder import KbPluginBuilder
 
 from gpts_builder.config import config_manager
 
 from gpts_builder.util.logger import logger
-from gpts_builder.util import PostgresVector
-from gpts_builder.util import PostgresVectorAsync
+
 import asyncio
 from scipy.spatial.distance import cosine
+# 查看所有模型的配置
+configs = config_manager.list_models_config()
+print(configs)
 config_manager.base_url = "https://www.lazygpt.cn/api"
-config_manager.apikey = "lazygpt-B9CzqJP3vbhqH3BF8m0BnMV2A61jdlDaG"
+config_manager.apikey = "lazygpt-MHXlP7AniCHUsgzm0ylyz2vcvxp6j"
 
-llm = LLM(model="gpt-3.5-turbo")
-#session = llm.set_system("你是一个AI助理").set_prompt("测试回复").chat_completions()
 
-# 使用知识库，知识库需要一个向量数据库（目前只支持pgvector）
-kb = KbPluginBuilder(db_driver=PostgresVector(dbname="postgres", user="myuser", password="mypassword", host="localhost", port=5432))
+async def llm_async_demo():
+    """
+    llm_async_demo 测试异步LLM的demo
+    """
+    ### example0: 初始化LLM
+    # 异步的session存储需要设置，目前只支持redis存储
+    session_storage = RedisStorageAsync("redis://localhost:6379")
+    llm = LLMAsync(model="gpt-3.5-turbo", session_storage=session_storage)
+    # 设置系统提示词和用户输入
+    await llm.set_system("你是一个AI助理").set_prompt("测试回复").build()
 
-kb_id = kb.create_dataset("测试知识库")
-#logger.info(kb_id)
+    ### example1: 测试一轮对话，返回所有结果
+    # 获取非流式回复
+    reply = await llm.chat_completions()
+    print(f"Received reply {reply}")
+    content = reply.get("choices")[0].get("message",{}).get("content") if reply.get("choices") else ""
+    print(f"Received content {content}")
 
-# 增加一条知识库内容
-kb.create_datas(2, "2好知识库", ["2好知识库测试","2好知识库demo"])
+    ### example2: 测试一轮对话，流式返回所有结果（获取流式回复：流式返回为一个异步生成器，需要迭代生成）
+    async for content in llm.chat_completions_stream():
+        print(f"Received content: {content}")
 
-# 根据文本在库中查询相似度
-# kb_detail = kb.get_kb_by_name(name="测试知识库")
-# logger.info(kb_detail)
 
-# s = kb.query_similarity(text="测试", kb_ids=[2, 3])
+def llm_sync_demo():
+    """
+    llm_sync_demo 测试同步LLM的demo
+    """
+    ### example0: 初始化LLM
+    # session存储支持redis存储｜全局变量存储，如果不传session_storage则默认使用全局变量存储
+    llm = LLM(model="gpt-3.5-turbo")
+    llm.set_system("这里填系统提示词").set_prompt("这里填提示词模板和参数或者内容").build()
 
-#logger.info(s)
+    ### example1: 测试一轮对话，返回所有结果
+    replay = llm.chat_completions()
+    content = replay.get("choices")[0].get("message",{}).get("content") if replay.get("choices") else ""
+    print(f"Received content: {content}")
 
-async def main():
-    db_driver = PostgresVectorAsync(dbname="postgres", user="myuser", password="mypassword", host="127.0.0.1", port=5432)
-    kb = KbPluginBuilderAsync(db_driver=db_driver)
+    ### example2: 测试一轮对话，流式返回所有结果（流式返回为一个异步生成器，需要迭代生成）
+    for content in llm.chat_completions_stream():
+        print(f"Received content: {content}")
     
-    #kb_id = await kb.add_kb_entry("测试知识库")
-    #print(f"Created KB Entry ID: {kb_id}")
-    kb_detail = await kb.get_kb_by_name("测试知识库")
-    print(f"kb_detail: {kb_detail}")
-    # 增加知识库数据
-    #await kb.add_index_with_questions(kb_id, "这是一个答案", ["问题1", "问题2"])
-    # 根据文本相似度查询
-    res = await kb.query_similarity("问题2", [kb.get("id") for kb in kb_detail], -1, search_all=False)
-    print(f"Similarity: {res}")
-    # 根据文本正则查询
-    #res = await kb.query_regex("这一个答*", [1,2])
-    #print(f"Similarity: {res}")
-
-
-async def debug_similarity():
-    db_driver = PostgresVectorAsync(dbname="postgres", user="myuser", password="mypassword", host="127.0.0.1", port=5432)
-    
-    
-    kb = KbPluginBuilderAsync(db_driver=db_driver)
-    # 直接比较两个向量
-    input_vector = await kb.generate_vector("问题1")
-    stored_vector = await kb.generate_vector("问题1")
-
-    similarity = 1 - cosine(input_vector, stored_vector)
-    print("Computed Similarity:", similarity)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
-    #asyncio.run(debug_similarity())
+    asyncio.run(llm_async_demo())
+    # llm_sync_demo()
+
+
+    

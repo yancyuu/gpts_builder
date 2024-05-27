@@ -1,10 +1,14 @@
-from .base_builder import BaseBuilder
+from .llm_base_builder import BaseBuilder
 from ...config.config_manager import config_manager
 from ...session_manager.session_manager import ChatGPTSession
 from ...session_manager.session_manager_async import SessionManagerAsync
-from ...session_manager.storage.global_storage import global_storage
+from ...session_manager.storage.redis_storage_async import RedisStorageAsync
+
 from ...util.http_client import http_client
 from ...util.logger import logger
+
+import json
+
 
 class LLMAsync(BaseBuilder):
 
@@ -12,7 +16,7 @@ class LLMAsync(BaseBuilder):
     def current_plugin(self):
         return self.__current_plugin
 
-    def __init__(self, model, session_storage, session_id=None, sessioncls = ChatGPTSession):
+    def __init__(self, model, session_storage: RedisStorageAsync, session_id=None, sessioncls = ChatGPTSession):
         """_summary_
 
         Args:
@@ -40,30 +44,74 @@ class LLMAsync(BaseBuilder):
             "input": input,
             "model": "text-embedding-ada-002"
         }
-        
-        logger.info(f"Sending embedding request with payload: {payload} and headers: {headers}")
+        url = config_manager.base_url + "/v1/embeddings"
 
-        response = await http_client.post_async(config_manager.base_url + "/v1/embeddings", json=payload, headers=headers)
+        curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
+        logger.info(f"[gpt-builder] {curl_command}")
+
+        response = await http_client.post_async(url=url, json=payload, headers=headers)
         # 记录响应
-        logger.info(f"Received embedding response: {response}")
+        logger.info(f"[gpt-builder] Received embedding response: {response}")
 
         return response
     
-    async def chat_completions(self):
-        """大模型chat请求
+    async def chat_completions(self, ** args) -> ChatGPTSession:
+        """大模型chat请求，非流式返回
         """
+        try:
+            # 校验传入的参数
+            valid_args = self.validate_chat_args(args, self.session_manager.model)
+        except ValueError as e:
+            raise Exception(f"Invalid argument: {e}")
+        # 1. 准备请求头
         headers = {
             'Authorization': f"Bearer {config_manager.apikey}",
             'Content-Type': 'application/json'
         }
-        plody = {
+        # 2. 准备请求数据
+        payload = {
             "messages": self.session.messages,
             "model": self.session.model
             }
-        logger.info(f"chat_completions  post {plody} headers {headers}")
-        reply = await http_client.post(config_manager.base_url + "/v1/chat/completions", json=plody, headers=headers, timeout=60, max_retries=3)
-        content = reply.get("choices")[0].get("message",{}).get("content") if reply.get("choices") else ""
-        return await self.session_manager.session_reply(self.session.session_id, content)
+        if args:
+            payload.update(valid_args)
+        url = config_manager.base_url + "/v1/chat/completions"
+
+        curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
+        logger.info(f"[gpt-builder] {curl_command}")
+
+        return await http_client.post_async(url=url, json=payload, headers=headers, timeout=60, max_retries=3)
+    
+    async def chat_completions_stream(self, **args):
+        """大模型chat请求，流式返回一个异步生成器"""
+        try:
+            # 校验传入的参数
+            valid_args = self.validate_chat_args(args, self.session_manager.model)
+        except ValueError as e:
+            raise Exception(f"[gpt-builder] Invalid argument: {e}")
+        
+        # 准备请求头
+        headers = {
+            'Authorization': f"Bearer {config_manager.apikey}",
+            'Content-Type': 'application/json'
+        }
+        
+        # 准备请求数据
+        payload = {
+            "messages": self.session.messages,
+            "model": self.session.model,
+            "stream": True
+        }
+        if args:
+            payload.update(valid_args)
+
+        url = config_manager.base_url + "/v1/chat/completions"        
+        curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
+        logger.info(f"[gpt-builder] {curl_command}")
+
+        async for line in http_client.post_stream_async(url=url, json=payload, headers=headers, timeout=60):
+            yield line 
+                        
     
 
 
