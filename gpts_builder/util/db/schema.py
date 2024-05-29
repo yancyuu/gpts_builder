@@ -36,7 +36,7 @@ class EmbbedingSchame:
     def created_at(self):
         return 'create_time'
 
-class KbSchame:
+class DatasetSchema:
     
     @property
     def id(self):

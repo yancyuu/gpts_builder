@@ -1,3 +1,3 @@
 from .llm.llm_builder import LLM
 
-from .rag.kb_builder import KbPluginBuilder
+from .rag.dataset_builder import DatasetBuilder

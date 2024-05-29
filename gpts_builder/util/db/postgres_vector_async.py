@@ -1,7 +1,7 @@
 from asyncpg import create_pool
 from asyncio import get_event_loop
 from .db_base import DbBase
-from ...util.db.schema import EmbbedingSchame, KbSchame, KB_TABLE_NAME, ANSWER_TABLE_NAME, QUESTION_TABLE_NAME
+from ...util.db.schema import EmbbedingSchame, DatasetSchema, KB_TABLE_NAME, ANSWER_TABLE_NAME, QUESTION_TABLE_NAME
 
 
 class PostgresVectorAsync(DbBase):
@@ -19,7 +19,7 @@ class PostgresVectorAsync(DbBase):
         self.db_params = kwargs
         self.answer_schema = EmbbedingSchame(ANSWER_TABLE_NAME)
         self.question_schema = EmbbedingSchame(QUESTION_TABLE_NAME)
-        self.kb_schema = KbSchame()
+        self.dataset_schema = DatasetSchema()
 
     async def init_db(self):
         """初始化数据库连接池。"""
@@ -44,10 +44,10 @@ class PostgresVectorAsync(DbBase):
                 # 创建知识库表 kb
                 await connection.execute(f"""
                 CREATE TABLE IF NOT EXISTS {KB_TABLE_NAME} (
-                    {self.kb_schema.id} SERIAL PRIMARY KEY,
-                    {self.kb_schema.name} TEXT,
-                    {self.kb_schema.creator} TEXT,
-                    {self.kb_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    {self.dataset_schema.id} SERIAL PRIMARY KEY,
+                    {self.dataset_schema.name} TEXT,
+                    {self.dataset_schema.creator} TEXT,
+                    {self.dataset_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )""")
                 # 创建索引表 answer_table
                 await connection.execute(f"""
@@ -57,7 +57,7 @@ class PostgresVectorAsync(DbBase):
                     {self.answer_schema.vector} vector,
                     {self.answer_schema.kb_id} INTEGER,
                     {self.answer_schema.created_at} TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY ({self.answer_schema.kb_id}) REFERENCES {KB_TABLE_NAME} ({self.kb_schema.id})
+                    FOREIGN KEY ({self.answer_schema.kb_id}) REFERENCES {KB_TABLE_NAME} ({self.dataset_schema.id})
                 )""")
                 # 创建内容表 question_table
                 await connection.execute(f"""
