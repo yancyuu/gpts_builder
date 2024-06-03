@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="gpts_builder",
-    version="0.1.16",
+    version="0.1.19",
     author="yancyyu",
     author_email="yancyyu.ok@gmail.com",
     description="A Python library for quickly building applications with large language models.",
@@ -18,11 +18,7 @@ setup(
         'backoff==2.2.1',
         'certifi==2024.2.2',
         'charset-normalizer==3.3.2',
-        'exceptiongroup==1.2.1',
-        'h11==0.14.0',
-        'httpcore==1.0.5',
         'httpx==0.27.0',
-        'idna==3.7',
         'redis==5.0.4',
         'regex==2024.4.28',
         'requests==2.31.0',

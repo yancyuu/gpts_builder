@@ -12,7 +12,7 @@ class SessionManagerAsync(object):
     def __init__(self, sessioncls: Type[ChatGPTSession], session_storage: RedisStorageAsync, model):
         self.session_storage = session_storage
         self.sessioncls = sessioncls
-        self.expires_in_seconds = int(get_env("SESSION_EXPIRES_IN_SECONDS", 3600))
+        self.expires_in_seconds = 3600
         self.model = model
 
     async def build_session(self, session_id, system_prompt=None):
