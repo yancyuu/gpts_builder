@@ -1,6 +1,7 @@
 from gpts_builder.builder import LLM
 from gpts_builder.builder_async import LLMAsync
 from gpts_builder.session_manager.storage.redis_storage_async import RedisStorageAsync
+from gpts_builder.util import get_env
 
 from gpts_builder.config import config_manager
 
@@ -12,7 +13,7 @@ from gpts_builder.config import config_manager
 configs = config_manager.list_models_config()
 print(configs)
 config_manager.base_url = "https://www.lazygpt.cn/api"
-config_manager.apikey = "lazygpt-MHXlP7AniCHUsgzm0ylyz2vcvxp6j"
+config_manager.apikey = get_env("APIKEY")
 
 
 async def llm_async_demo():

@@ -1,6 +1,7 @@
 
 from gpts_builder.session_manager.storage.redis_storage import RedisStorage
 from gpts_builder.session_manager.storage.redis_storage_async import RedisStorageAsync
+from gpts_builder.util import get_env
 
 from gpts_builder.config import config_manager
 
@@ -8,7 +9,7 @@ import asyncio
 
 ### 数据检索增强模块测试代码：为什么要做检索增强（https://platform.openai.com/docs/guides/prompt-engineering/strategy-use-external-tools）
 config_manager.base_url = "https://www.lazygpt.cn/api"
-config_manager.apikey = "lazygpt-B9CzqJP3vbhqH3BF8m0BnMV2A61jdlDaG"
+config_manager.apikey = get_env("APIKEY")
 
 
 def dataset_demo():
