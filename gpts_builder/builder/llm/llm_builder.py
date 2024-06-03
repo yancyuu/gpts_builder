@@ -41,11 +41,11 @@ class LLM(BaseBuilder):
             "model": "text-embedding-ada-002"
         }
         
-        logger.info(f"Sending embedding request with payload: {payload} and headers: {headers}")
+        logger.info(f"[gpts-builder] Sending embedding request with payload: {payload} and headers: {headers}")
 
         response = http_client.post(config_manager.base_url + "/v1/embeddings", json=payload, headers=headers)
         # 记录响应
-        logger.info(f"Received embedding response: {response}")
+        logger.info(f"[gpts-builder] Received embedding response: {response}")
 
         return response
     
@@ -56,7 +56,7 @@ class LLM(BaseBuilder):
             # 校验传入的参数
             valid_args = self.validate_chat_args(args, self.session_manager.model)
         except ValueError as e:
-            raise Exception(f"Invalid argument: {e}")
+            raise Exception(f"[gpts-builder] Invalid argument: {e}")
         # 1. 准备请求头
         headers = {
             'Authorization': f"Bearer {config_manager.apikey}",
@@ -69,11 +69,11 @@ class LLM(BaseBuilder):
             }
         if args:
             payload.update(valid_args)
-        logger.info(f"Sending  chat completions request payload: {payload} headers {headers}")
+        logger.info(f"[gpts-builder] Sending  chat completions request payload: {payload} headers {headers}")
 
         response = http_client.post(config_manager.base_url + "/v1/chat/completions", json=payload, headers=headers, timeout=60, max_retries=3)
         # 记录响应
-        logger.info(f"Received chat completions response: {response}")
+        logger.info(f"[gpts-builder] Received chat completions response: {response}")
 
         return response
     
@@ -84,7 +84,7 @@ class LLM(BaseBuilder):
             # 校验传入的参数
             valid_args = self.validate_chat_args(args, self.session_manager.model)
         except ValueError as e:
-            raise Exception(f"[gpt-builder] Invalid argument: {e}")
+            raise Exception(f"[gpts-builder] Invalid argument: {e}")
         
         # 准备请求头
         headers = {
@@ -103,10 +103,15 @@ class LLM(BaseBuilder):
 
         url = config_manager.base_url + "/v1/chat/completions"        
         curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
-        logger.info(f"[gpt-builder] {curl_command}")
+        logger.info(f"[gpts-builder] {curl_command}")
         return http_client.post_stream(url=url, json=payload, headers=headers, timeout=60)    
     
-
+    def clear_session(self):
+        """清除会话"""
+        try:
+            self.session_manager.clear_session(self.session_id)
+        except Exception as e:
+            raise Exception(f"[gpts-builder] Failed to clear session: {e}")
 
     
 

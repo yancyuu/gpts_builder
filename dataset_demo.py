@@ -1,19 +1,10 @@
-from gpts_builder.builder import LLM
-from gpts_builder.session_manager import SessionManager
-from gpts_builder.session_manager import SessionManagerAsync
+
 from gpts_builder.session_manager.storage.redis_storage import RedisStorage
 from gpts_builder.session_manager.storage.redis_storage_async import RedisStorageAsync
 
-from gpts_builder.builder_async import DatasetBuilderAsync
-from gpts_builder.builder import DatasetBuilder
-
 from gpts_builder.config import config_manager
 
-from gpts_builder.util.logger import logger
-from gpts_builder.util import PostgresVector
-from gpts_builder.util import PostgresVectorAsync
 import asyncio
-from scipy.spatial.distance import cosine
 
 ### 数据检索增强模块测试代码：为什么要做检索增强（https://platform.openai.com/docs/guides/prompt-engineering/strategy-use-external-tools）
 config_manager.base_url = "https://www.lazygpt.cn/api"
@@ -24,6 +15,8 @@ def dataset_demo():
     """
     dataset_demo 检索增强数据集的demo
     """
+    from gpts_builder.builder import DatasetBuilder
+    from gpts_builder.util import PostgresVector
     # 使用知识库，知识库需要一个向量数据库（目前只支持pgvector）
     ### example1: 初始化向量数据库
     db_driver = PostgresVector(dbname="postgres", user="myuser", password="mypassword", host="localhost", port=5432)
@@ -52,8 +45,11 @@ def dataset_demo():
 
 async def dataset_asnyc_demo():
     """
-    main 创建知识库
+    dataset_asnyc_demo 异步操作知识库模块
     """
+    from gpts_builder.builder_async import DatasetBuilderAsync
+    from gpts_builder.util import PostgresVectorAsync
+    # 使用知识库，知识库需要一个向量数据库（目前只支持pgvector）
     db_driver = PostgresVectorAsync(dbname="postgres", user="myuser", password="mypassword", host="127.0.0.1", port=5432)
     dataset_builder = DatasetBuilderAsync(db_driver=db_driver)
     

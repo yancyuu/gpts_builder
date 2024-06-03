@@ -146,7 +146,7 @@ class HTTPClient:
                 # Properly using the async with statement with client.stream
                 async with client.stream("POST", url=url, headers=headers, json=json, timeout=timeout) as response:
                     response.raise_for_status()  # Ensure the response status is OK
-                    async for chunk in response.aiter_text(chunk_size=1024, decode_unicode=True):
+                    async for chunk in response.aiter_text(chunk_size=1024):
                         yield chunk
         # 返回生成器
         async for item in request_with_backoff():

@@ -47,11 +47,11 @@ class LLMAsync(BaseBuilder):
         url = config_manager.base_url + "/v1/embeddings"
 
         curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
-        logger.info(f"[gpt-builder] {curl_command}")
+        logger.info(f"[gpts-builder] {curl_command}")
 
         response = await http_client.post_async(url=url, json=payload, headers=headers)
         # 记录响应
-        logger.info(f"[gpt-builder] Received embedding response: {response}")
+        logger.info(f"[gpts-builder] Received embedding response: {response}")
 
         return response
     
@@ -78,7 +78,7 @@ class LLMAsync(BaseBuilder):
         url = config_manager.base_url + "/v1/chat/completions"
 
         curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
-        logger.info(f"[gpt-builder] {curl_command}")
+        logger.info(f"[gpts-builder] {curl_command}")
 
         return await http_client.post_async(url=url, json=payload, headers=headers, timeout=60, max_retries=3)
     
@@ -88,7 +88,7 @@ class LLMAsync(BaseBuilder):
             # 校验传入的参数
             valid_args = self.validate_chat_args(args, self.session_manager.model)
         except ValueError as e:
-            raise Exception(f"[gpt-builder] Invalid argument: {e}")
+            raise Exception(f"[gpts-builder] Invalid argument: {e}")
         
         # 准备请求头
         headers = {
@@ -107,12 +107,17 @@ class LLMAsync(BaseBuilder):
 
         url = config_manager.base_url + "/v1/chat/completions"        
         curl_command = BaseBuilder.generate_curl_command(url, payload, headers) 
-        logger.info(f"[gpt-builder] {curl_command}")
+        logger.info(f"[gpts-builder] {curl_command}")
 
         async for line in http_client.post_stream_async(url=url, json=payload, headers=headers, timeout=60):
             yield line 
                         
-    
+    async def clear_session(self):
+        """清除会话"""
+        try:
+            await self.session_manager.clear_session(self.session_id)
+        except Exception as e:
+            raise Exception(f"Failed to clear session: {e}")
 
 
     

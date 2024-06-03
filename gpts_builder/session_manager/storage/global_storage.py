@@ -31,6 +31,13 @@ class GlobalStorage(metaclass=SingletonMetaclass):
             raise Exception("找不到key")
         data = self.global_map.get(key)
         return json.loads(data) if data else None
+    
+    def delete(self, key) -> bool:
+        if not key:
+            raise Exception("找不到key")
+        if key in self.global_map:
+            del self.global_map[key]
+        return True
 
 
 

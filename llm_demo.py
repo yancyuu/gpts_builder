@@ -4,10 +4,6 @@ from gpts_builder.session_manager.storage.redis_storage_async import RedisStorag
 
 from gpts_builder.config import config_manager
 
-from gpts_builder.util.logger import logger
-
-import asyncio
-
 """
 大预言模型的demo
 """
@@ -24,7 +20,7 @@ async def llm_async_demo():
     llm_async_demo 测试异步LLM的demo
     """
     ### example0: 初始化LLM（开启一轮对话）
-    # 异步的session存储需要设置，目前只支持redis存储
+    # 异步的session存储需要设置，目前只支持异步redis存储
     session_storage = RedisStorageAsync("redis://localhost:6379")
     llm = LLMAsync(model="gpt-3.5-turbo", session_storage=session_storage)
     # 设置系统提示词和用户输入
@@ -67,11 +63,14 @@ def llm_sync_demo():
     ### example3: 查看当前会话的历史消息
     session = llm.session
     print(f"Session messages: {session.to_json()}")
+
+    ### example4: 清除当前会话(如果不需要上下文管理，存储设置成全局变量存储，然后手动清除会话即可)
+    llm.clear_session()
     
 
 if __name__ == "__main__":
-    asyncio.run(llm_async_demo())
-    # llm_sync_demo()
+    # asyncio.run(llm_async_demo())
+    llm_sync_demo()
 
 
     
