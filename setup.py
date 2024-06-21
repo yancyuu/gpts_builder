@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="gpts_builder",
-    version="0.1.19",
+    version="0.1.20",
     author="yancyyu",
     author_email="yancyyu.ok@gmail.com",
     description="A Python library for quickly building applications with large language models.",
